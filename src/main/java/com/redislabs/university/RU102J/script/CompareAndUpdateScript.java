@@ -13,7 +13,7 @@ import java.util.List;
  * greater than or less than a the provided value,
  * as requested.
  */
-public class CompareAndUpdateScript {
+public class  CompareAndUpdateScript {
 
     private final String sha;
     public static String script = "" +

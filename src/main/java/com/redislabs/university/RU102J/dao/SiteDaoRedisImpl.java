@@ -53,7 +53,7 @@ public class SiteDaoRedisImpl implements SiteDao {
                 cursor = siteIds.getCursor();
                 sites.addAll(getSites(jedis, siteIds.getResult()));
             } while(!cursor.equals("0"));
-            
+
             return sites;
         }
     }

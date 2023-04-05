@@ -3,6 +3,7 @@ package com.redislabs.university.RU102J.dao;
 import com.redislabs.university.RU102J.api.MeterReading;
 import com.redislabs.university.RU102J.api.SiteStats;
 import com.redislabs.university.RU102J.script.CompareAndUpdateScript;
+import redis.clients.jedis.BinaryJedis;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Transaction;
@@ -47,7 +48,7 @@ public class SiteStatsDaoRedisImpl implements SiteStatsDao {
             ZonedDateTime day = reading.getDateTime();
             String key = RedisSchema.getSiteStatsKey(siteId, day);
 
-            updateBasic(jedis, key, reading);
+            updateOptimized(jedis, key, reading);
         }
     }
 
@@ -80,7 +81,16 @@ public class SiteStatsDaoRedisImpl implements SiteStatsDao {
 
     // Challenge #3
     private void updateOptimized(Jedis jedis, String key, MeterReading reading) {
+        String reportedAt = ZonedDateTime.now(ZoneOffset.UTC).toString();
         // START Challenge #3
+        Transaction multi = jedis.multi();
+        multi.hset(key, SiteStats.reportingTimeField,  reportedAt);
+        multi.hincrBy(key,SiteStats.countField, 1);
+        multi.expire(key, weekSeconds);
+        compareAndUpdateScript.updateIfGreater(multi, key, SiteStats.maxWhField, reading.getWhGenerated());
+        compareAndUpdateScript.updateIfLess(multi, key, SiteStats.minWhField, reading.getWhGenerated());
+        compareAndUpdateScript.updateIfGreater(multi, key, SiteStats.maxCapacityField, getCurrentCapacity(reading));
+        multi.exec();
         // END Challenge #3
     }
 
